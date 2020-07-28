@@ -56,13 +56,15 @@
             <v-card style="margin-top: 60px">
               <v-toolbar color="info" dark>
                 <v-toolbar-title>
-                  {{text.test_report}}
+                  {{text.test_report}} - {{this.channel}}
                 </v-toolbar-title>
               </v-toolbar>
               <v-list>
                 <v-list-group v-for="item in testSuites" :key="item.id">
                   <v-list-tile slot="activator">
                     <v-icon v-if="item.notError" color="success">done</v-icon>
+                    <!--Joe Pritchard - resolution icon uses warning-->
+                    <v-icon warning v-else-if="item.id === '3'" color="warning">warning</v-icon>
                     <v-icon v-else color="error">close</v-icon>
                     <span>{{t(item.label)}}</span>
                   </v-list-tile>
@@ -488,7 +490,7 @@ export default {
           String(this.ts).slice(7) +
           Math.floor(Math.random() * 1000000).toString(36);
       }
-      //AgoraRTC.Logger.enableLogUpload();
+      AgoraRTC.Logger.enableLogUpload();
       this.sendId = Number.parseInt(String(this.ts).slice(7), 10) * 10 + 1;
       this.recvId = Number.parseInt(String(this.ts).slice(7), 10) * 10 + 2;
       this.sendClient = AgoraRtc.createClient({ mode: 'live', codec: 'h264' });
@@ -659,15 +661,15 @@ export default {
 
     destructAll() {
       try {
-        //if(this.isEnableCloudProxy){
-        //  this.sendClient.stopProxyServer();
-        //  this.recvClient.stopProxyServer();
-        //}
         this.sendStream && this.sendStream.close();
         this.recvStream && this.recvStream.close();
         this.sendClient.unpublish(this.sendStream);
         this.sendClient.leave();
         this.recvClient.leave();
+        if(this.isEnableCloudProxy){
+          this.sendClient.stopProxyServer();
+          this.recvClient.stopProxyServer();
+        }
         clearInterval(this.detectInterval);
       } catch (err) {
         throw(err);
