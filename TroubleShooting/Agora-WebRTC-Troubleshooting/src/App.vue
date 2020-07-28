@@ -47,7 +47,7 @@
                 </v-btn-toggle>
                 <v-card-text class="tip" v-if="fixProxyPort">
                   <span class="tip_icon"></span>{{text.cloudProxy_tips}}
-                  <a href="https://docs.agora.io/cn/Audio%20Broadcast/cloud_proxy_web?platform=Web">{{text.cloudProxy_tips_link}}</a>
+                  <a href="https://docs.agora.io/en/Audio%20Broadcast/cloud_proxy_web?platform=Web">{{text.cloudProxy_tips_link}}</a>
                 </v-card-text>
               </v-card-text>
               <v-card-text>
@@ -67,13 +67,15 @@
             <v-card style="margin-top: 60px">
               <v-toolbar color="info" dark>
                 <v-toolbar-title>
-                  {{text.test_report}}
+                  {{text.test_report}} - {{this.channel}}
                 </v-toolbar-title>
               </v-toolbar>
               <v-list>
                 <v-list-group v-for="item in testSuites" :key="item.id">
                   <v-list-tile slot="activator">
                     <v-icon v-if="item.notError" color="success">done</v-icon>
+                    <!--Joe Pritchard - resolution icon uses warning-->
+                    <v-icon warning v-else-if="item.id === '3'" color="warning">warning</v-icon>
                     <v-icon v-else color="error">close</v-icon>
                     <span>{{t(item.label)}}</span>
                   </v-list-tile>
@@ -494,6 +496,8 @@ export default {
         Math.floor(Math.random() * 1000000).toString(36);
       this.sendId = Number.parseInt(String(this.ts).slice(7), 10) * 10 + 1;
       this.recvId = Number.parseInt(String(this.ts).slice(7), 10) * 10 + 2;
+
+      AgoraRtc.Logger.enableLogUpload();
       this.sendClient = AgoraRtc.createClient({ mode: 'live', codec: 'h264' });
       this.recvClient = AgoraRtc.createClient({ mode: 'live', codec: 'h264' });
       if(this.isEnableCloudProxy && this.fixProxyPort){
