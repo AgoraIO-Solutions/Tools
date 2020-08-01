@@ -370,6 +370,8 @@ export default {
       renderChart: false,
       testing: false,
       isEnableCloudProxy: false,
+      isTestVideo: true,
+      isTestAudio: true,
       fixProxyPort: false,
       profiles: profileArray.map(item => {
         item.status = "pending";
@@ -510,6 +512,57 @@ export default {
       }
     },
 
+    createSendStream(camera, microphone, mp4, videoStream) {
+        this.sendStream = AgoraRtc.createStream({
+          streamID: this.sendId,
+          video: camera,
+          audio: microphone,
+          screen: false,
+          videoSource: mp4?videoStream.getVideoTracks()[0]:null,
+          audioSource: mp4?videoStream.getAudioTracks()[0]:null
+        });
+    },
+
+    async testAudio(){
+        let stream = AgoraRtc.createStream({
+                               video: false,
+                               audio: true,
+                               screen: false
+                             });
+        stream.init(() => {
+            this.isTestAudio = true;
+            stream.close();
+            return true;
+        },
+        err => {
+            this.isTestAudio = false;
+            stream.close();
+            return false;
+        });
+
+    },
+
+    async testVideo(){
+        let stream = AgoraRtc.createStream({
+                               video: true,
+                               audio: false,
+                               screen: false
+                             });
+        stream.init(() => {
+            this.isTestVideo = true;
+            stream.close();
+        },
+        err => {
+            this.isTestVideo = false;
+            stream.close();
+        });
+    },
+
+    async testDevices(){
+        const v = await this.testVideo();
+        const a = await this.testAudio();
+    },
+
     initSendClient() {
         let isChrome = navigator.userAgent.indexOf("Chrome") >= 0;
         if (isChrome){
@@ -517,60 +570,53 @@ export default {
             videoDOM.play();
             videoDOM.muted = true;
         }
-        setTimeout(() => {
-            if(isChrome){
-                let videoDOM = document.querySelector('#sample_video');
-                const videoStream = videoDOM.captureStream(60);
-                this.sendStream = AgoraRtc.createStream({
-                  streamID: this.sendId,
-                  video: true,
-                  audio: true,
-                  screen: false,
-                  videoSource: videoStream.getVideoTracks()[0],
-                  audioSource: videoStream.getAudioTracks()[0]
-                });
-            }
-            else {
-                this.sendStream = AgoraRtc.createStream({
-                  streamID: this.sendId,
-                  video: true,
-                  audio: true,
-                  screen: false
-                });
-            }
-            this.sendClient.init(
-              APP_ID,
-              () => {
-                this.sendStream.init(
-                  () => {
-                    this.sendClient.join(
-                      null,
-                      this.channel,
-                      this.sendId,
+        this.testDevices().then(() => {
+            setTimeout(() => {
+                    if(isChrome){
+                        let videoDOM = document.querySelector('#sample_video');
+                        const videoStream = videoDOM.captureStream(60);
+                        this.createSendStream(true, true, true, videoStream);
+                    }
+                    else {
+                        this.createSendStream(this.isTestVideo, this.isTestAudio, false, null);
+                    }
+                    this.sendClient.init(
+                      APP_ID,
                       () => {
-                        this.sendClient.publish(this.sendStream, err => {
-                          reject(err);
-                        });
-                        setTimeout(() => {
-                          resolve();
-                        });
+                        this.sendStream.init(
+                          () => {
+                            this.sendClient.join(
+                              null,
+                              this.channel,
+                              this.sendId,
+                              () => {
+                                this.sendClient.publish(this.sendStream, err => {
+                                  reject(err);
+                                });
+                                setTimeout(() => {
+                                  resolve();
+                                });
+                              },
+                              err => {
+                                reject(err);
+                              }
+                            );
+                          },
+                          err => {
+                            reject(err);
+                          }
+                        );
                       },
                       err => {
                         reject(err);
                       }
                     );
-                  },
-                  err => {
-                    reject(err);
-                  }
-                );
-              },
-              err => {
-                reject(err);
-              }
-            );
-        }, 500);
+            }, 3000);
+        });
+
     },
+
+
 
     initRecvClient() {
       return new Promise((resolve, reject) => {
