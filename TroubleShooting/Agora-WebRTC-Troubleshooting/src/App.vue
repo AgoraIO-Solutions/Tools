@@ -75,7 +75,7 @@
                   <v-list-tile slot="activator">
                     <v-icon v-if="item.notError" color="success">done</v-icon>
                     <!--Joe Pritchard - resolution icon uses warning-->
-                    <v-icon warning v-else-if="item.id === '3'" color="warning">warning</v-icon>
+                    <v-icon warning v-else-if="item.id === '3' || item.id === '4'" color="warning">warning</v-icon>
                     <v-icon v-else color="error">close</v-icon>
                     <span>{{t(item.label)}}</span>
                   </v-list-tile>
