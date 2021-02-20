@@ -490,7 +490,7 @@ export default {
           String(this.ts).slice(7) +
           Math.floor(Math.random() * 1000000).toString(36);
       }
-      AgoraRTC.Logger.enableLogUpload();
+      AgoraRtc.Logger.enableLogUpload();
       this.sendId = Number.parseInt(String(this.ts).slice(7), 10) * 10 + 1;
       this.recvId = Number.parseInt(String(this.ts).slice(7), 10) * 10 + 2;
       this.sendClient = AgoraRtc.createClient({ mode: 'live', codec: 'h264' });
