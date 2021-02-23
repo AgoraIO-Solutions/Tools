@@ -666,10 +666,6 @@ export default {
         this.sendClient.unpublish(this.sendStream);
         this.sendClient.leave();
         this.recvClient.leave();
-        if(this.isEnableCloudProxy){
-          this.sendClient.stopProxyServer();
-          this.recvClient.stopProxyServer();
-        }
         clearInterval(this.detectInterval);
       } catch (err) {
         throw(err);
