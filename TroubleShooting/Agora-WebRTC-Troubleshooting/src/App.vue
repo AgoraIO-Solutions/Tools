@@ -3,9 +3,6 @@
     <!-- title bar -->
     <v-toolbar dark color="primary">
       <v-toolbar-title>{{text.toolbar_title}}</v-toolbar-title>
-      <a href="https://github.com/AgoraIO/Tools/tree/master/TroubleShooting/Agora-WebRTC-Troubleshooting" class="aperture">
-      <span class="github"></span>
-      </a>
       <v-spacer></v-spacer>
       <v-btn v-on:click="switchLanguage" color="blue" :disabled="languageDisabled">
         {{text.language}}
@@ -18,6 +15,9 @@
       </v-btn>
       <v-btn v-else color="error" disabled>
         {{text.running}}
+      </v-btn>
+      <v-btn v-on:click="copyLogs" color="info" >
+        Download Logs
       </v-btn>
     </v-toolbar>
     <!-- end -->
@@ -321,13 +321,16 @@
 </template>
 
 <script>
-import  VConsole  from  'vconsole'
+// import  VConsole  from  'vconsole'
 import AgoraRtc from "agora-rtc-sdk";
+import { Debugout } from 'debugout.js';
 const langs = ['zh', 'en'];
 import { profileArray, APP_ID } from "./utils/settings";
 import * as i18n from './utils/i18n'
 
-const log = console.log.bind(console)
+// const log = console.log.bind(console)
+
+const logger = new Debugout()
 
 // If need mobile phone terminal debugging
 // let vConsole = new VConsole()
@@ -403,20 +406,20 @@ export default {
       bitrateData: {
           columns: ['index', 'tVideoBitrate', 'tAudioBitrate'],
           rows: [
-            { 
-              index: 0, 
-              'tVideoBitrate': 0, 
-              'tAudioBitrate': 0 
+            {
+              index: 0,
+              'tVideoBitrate': 0,
+              'tAudioBitrate': 0
             },
         ]
       },
       packetsData: {
         columns: ["index", 'tVideoPacketLoss', 'tAudioPacketLoss'],
         rows: [
-          { 
-            index: 0, 
-            'tVideoPacketLoss': 0, 
-            'tAudioPacketLoss': 0 
+          {
+            index: 0,
+            'tVideoPacketLoss': 0,
+            'tAudioPacketLoss': 0
           }
         ]
       },
@@ -481,22 +484,24 @@ export default {
     switchLanguage () {
       this.language = this.language === 0 ? 1 : 0
     },
-
+    copyLogs () {
+      logger.downloadLog()
+    },
     initialize() {
       this.ts = new Date().getTime();
-      console.log("start initialize!");
       if (null == this.channel) {
         this.channel =
           String(this.ts).slice(7) +
           Math.floor(Math.random() * 1000000).toString(36);
       }
+      logger.info("start initialize! channel id: ", this.channel);
       AgoraRtc.Logger.enableLogUpload();
       this.sendId = Number.parseInt(String(this.ts).slice(7), 10) * 10 + 1;
       this.recvId = Number.parseInt(String(this.ts).slice(7), 10) * 10 + 2;
       this.sendClient = AgoraRtc.createClient({ mode: 'live', codec: 'h264' });
       this.recvClient = AgoraRtc.createClient({ mode: 'live', codec: 'h264' });
-      console.log("start setup proxy!");
       if(this.isEnableCloudProxy){
+        logger.info("start setup proxy!");
         this.sendClient.startProxyServer(3);
         this.recvClient.startProxyServer(3);
       }
@@ -506,6 +511,7 @@ export default {
         let isChrome = navigator.userAgent.indexOf("Chrome") >= 0;
         if (isChrome){
             let videoDOM = document.querySelector('#sample_video');
+            logger.info("chrome detected, use local video for network check!", navigator.userAgent)
             videoDOM.play();
             videoDOM.muted = true;
         }
@@ -668,6 +674,7 @@ export default {
         this.recvClient.leave();
         clearInterval(this.detectInterval);
       } catch (err) {
+        logger.error(err.msg)
         throw(err);
       }
     },
@@ -720,7 +727,7 @@ export default {
     },
 
     parseUrl : function() {
-      console.log("start parse url!");
+      logger.info("start parse url!");
       var oldUrl = window.location.href;
       if (oldUrl.indexOf("?") > 0) {
         this.host = oldUrl.split("?")[0];
@@ -748,20 +755,20 @@ export default {
       this.bitrateData = {
         columns: ["index", 'tVideoBitrate', 'tAudioBitrate'],
         rows: [
-          { 
-            index: 0, 
-            'tVideoBitrate': 0, 
-            'tAudioBitrate': 0 
+          {
+            index: 0,
+            'tVideoBitrate': 0,
+            'tAudioBitrate': 0
           }
         ]
       }
       this.packetsData = {
         columns: ["index", 'tVideoPacketLoss', 'tAudioPacketLoss'],
         rows: [
-          { 
-            index: 0, 
-            'tVideoPacketLoss': 0, 
-            'tAudioPacketLoss': 0 
+          {
+            index: 0,
+            'tVideoPacketLoss': 0,
+            'tAudioPacketLoss': 0
           }
         ]
       }
@@ -771,12 +778,12 @@ export default {
       this.currentTestSuite = "0";
       let testSuite = this.testSuites["0"];
       setTimeout(() => {
-        console.log("start handleCompatibilityCheck");
+        logger.info("start handleCompatibilityCheck");
         testSuite.notError = AgoraRtc.checkSystemRequirements();
         testSuite.notError
           ? (testSuite.extra = this.t("fully_supported"))
           : (testSuite.extra = this.t("some_functions_may_be_limited"));
-        console.log(testSuite.notError)
+        logger.info(testSuite.notError)
         this.handleMicrophoneCheck();
       }, 3000);
     },
@@ -819,6 +826,7 @@ export default {
           try {
             this.sendStream.close();
           } catch (error) {
+            logger.error(error.msg)
             throw(error);
           } finally {
             this.handleSpeakerCheck();
@@ -898,6 +906,7 @@ export default {
       } catch (err) {
         testSuite.extra = err.msg;
         testSuite.notError = false;
+        logger.error(err.msg);
         setTimeout(() => {
           this.testing = false;
           this.currentTestSuite = "5";
@@ -922,7 +931,7 @@ export default {
           if (this.bitrateData && this.packetsData) {
             let bitrateInfo = this.bitrateData.rows.pop();
             let packetInfo = this.packetsData.rows.pop();
-          
+
             let videoBitrate = bitrateInfo.tVideoBitrate
             let audioBitrate = bitrateInfo.tAudioBitrate
             let videoPacketLoss = packetInfo.tVideoPacketLoss
@@ -946,20 +955,19 @@ export default {
       }, 21500);
     },
     fetchAndGetHostUrl : function() {
-      var rest = window.location.href;
+      const rest = window.location.href;
       if (rest.indexOf("?") > 0) {
         this.host = rest.split("?")[0];
       } else {
         this.host = rest;
       }
-      var r = this.isEnableCloudProxy ? "1" : "0";
+      const r = this.isEnableCloudProxy ? "1" : "0";
       this.url = this.host + "?channel=" + this.channel + "&proxy=" + r
-      console.log(this.host);
-      console.log(this.url);
+      logger.info("fetchAndGetHostUrl: ", this.host, this.url);
     },
     haveATry() {
       this.fetchAndGetHostUrl();
-      console.log("start open dialog")
+      logger.info("start open dialog")
       this.dialog = true;
       this.retry();
       this.snackbar = false;
@@ -977,7 +985,7 @@ export default {
       if (this.sendStream && this.sendStream.isPlaying()) {
         this.destructAll();
       }
-      console.log("start retry")
+      logger.info("start retry")
       //If the resolution is equal to not supported, 1. Do not play video stream; 2. Give error prompt
         this.showVideo = true
 
@@ -995,9 +1003,9 @@ export default {
                 this.channel + "live",
                 this.sendId,
                 () => {
-                  console.log("start publish")
+                  logger.info("start publish")
                   this.sendClient.publish(this.sendStream, err => {
-                    console.log(err);
+                    logger.error(err);
                     reject(err);
                   });
                 },
@@ -1013,14 +1021,14 @@ export default {
 
 
         this.sendClient.on("stream-added", evt => {
-            console.log("stream-added");
+            logger.info("stream-added:",evt.stream);
             if(!this.isRemoteAdded){
                 this.sendClient.subscribe(evt.stream);
                 this.isRemoteAdded = true;
             }
         });
         this.sendClient.on("stream-subscribed", evt => {
-          console.log("stream-subscribed");
+          logger.info("stream-subscribed", evt.stream);
           evt.stream.play("modal-remote-video");
         });
     },
